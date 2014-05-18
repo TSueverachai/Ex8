@@ -109,6 +109,4 @@ plot(hac)                # Plot
 # DBSCAN
 dtm5 <- dtm[1:200,]            # Consider only first 100 documents
 dbscan_clus <- dbscan(dtm5,2,showplot = 2)  # Implement DBSCAN
-plot(dbscan_clus$cluster)
-plot(dbscan_clus$cluster)
-dbscan(dtm[1:500,], 1, showplot = 2)
+
