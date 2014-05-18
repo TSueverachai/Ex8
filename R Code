@@ -1,0 +1,114 @@
+#======================================================
+# Pre-processing Data
+#======================================================
+# We do not need to convert the data to plain text as it is already plain text
+class(rt[[1]])
+
+# To remove space from plain text
+stripWhitespace(rt[[1]])
+
+# To make plain text to lower case
+tolower(rt[[1]])
+
+# To remove punctuation
+removePunctuation(rt[[1]])
+
+# To remove Numbers
+removeNumbers(rt[[1]])
+
+# Removal of stopwords; very common words that their value is almost zero, in other
+# words their entropy is very low
+setStopWords <- c("it", "is", "not","for","the", "and", "in", "to")
+setStopWords <- stopwords("en")
+removeWords(rt[[1]], setStopWords)
+
+# Use tm_map to apply given function to all corpus (rt)
+tm_map(rt, removeWords, setStopWords)
+
+# Tokenizer; breaking a stream of text up into words
+scan_tokenizer(rt[[1]])
+
+
+tm <- tm_map(rt, scan_tokenizer)
+
+# To remove space from plain text
+tm <- tm_map(tm, stripWhitespace)
+
+# To make plain text to lower case
+tm <- tm_map(tm, tolower)
+
+# To remove Numbers
+tm <- tm_map(tm, removeNumbers)
+
+# To remove punctuation
+tm <- tm_map(tm, removePunctuation)
+
+tm <- tm_map(tm, removeWords, setStopWords)
+
+tdm <- TermDocumentMatrix(m)[1:10, 1:10]
+tdm <- TermDocumentMatrix(rt, control = list(tolower = TRUE, removePunctuation = TRUE
+                                             , stopwords = TRUE
+                                             , tokenize = scan_tokenizer
+                                             , removeNumbers = TRUE
+                                             , stemming = TRUE))
+findFreqTerms(tdm, 5000, 10000)
+inspect(m[1])
+
+#======================================================
+# Visualisation
+#======================================================
+require(RTextTools)
+require(topicmodels)
+
+# Convert to matrix form which will be sorted in order to group in the form of data
+# frame includng frequency
+m <- as.matrix(tdm)
+v <- sort(rowSums(m),decreasing=TRUE)
+d <- data.frame(word = names(v),freq=v)
+
+# Plot a word cloud
+wordcloud(d$word,d$freq, min.freq = 1500)
+
+#======================================================
+# Topic Models
+#======================================================
+dtm <- DocumentTermMatrix(rt,
+                          control = list(stopwords = TRUE, 
+                                         removeNumbers = TRUE,
+                                         stripWhitespace = TRUE, toLower = TRUE,
+                                         removePunctuation = TRUE,
+                                         stemming = TRUE))
+
+rowTotals <- apply(dtm , 1, sum)         #Find the sum of words in each Document
+dtm2   <- dtm[which(rowTotals > 0),]     #Remove all docs without words
+lda_dtm <- LDA(dtm2,5)                   #Apply LDA function
+terms(lda_dtm)                           #Get term and topic numbers
+topics(lda_dtm)                          #List topic number for each document
+
+dtm3 <- dtm[sample(nrow(dtm), nrow(dtm)*0.25),]  #Take only 25% at random
+rowTotals <- apply(dtm3 , 1, sum)         #Find the sum of words in each Document
+dtm3   <- dtm3[which(rowTotals > 0),]     #Remove all docs without words
+ctm_dtm <- CTM(dtm3,5) 
+
+#======================================================
+# Clustering
+#======================================================
+
+# k-mean clustering
+kmean_clus <- kmeans(dtm, 10)
+plot(1:21578, kmean_clus$cluster)
+plot(1:(333060/2), kmean_clus$centers[sample(333060, 333060/2)])
+points(kmean_clus$centers, pch = 21)
+
+# HAC
+dtm4 <- dtm[1:50,]       # Consider only first 100 documents to prevent overload
+dtm4 <- as.matrix(dtm4)  # Convert to matrix form
+hac <- agnes(dtm4)       # Implement HAC function
+plot(hac)                # Plot
+
+# DBSCAN
+dtm5 <- dtm[1:200,]            # Consider only first 100 documents
+dbscan_clus <- dbscan(dtm5,2,showplot = 2)  # Implement DBSCAN
+plot(dbscan_clus$cluster)
+plot(dbscan_clus$cluster)
+dbscan(dtm[1:500,], 1, showplot = 2)
